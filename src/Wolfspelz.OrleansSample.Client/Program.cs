@@ -75,6 +75,7 @@ namespace Wolfspelz.OrleansSample.Client
 
         private static async Task DoClientWork(IClusterClient client)
         {
+            Console.WriteLine("test1");
             Console.WriteLine("[set|get|inc] key (value)");
 
             while (true)
