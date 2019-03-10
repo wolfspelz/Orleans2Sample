@@ -4,7 +4,9 @@ using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Runtime;
 using Orleans.Configuration;
+using Orleans.Hosting;
 using Wolfspelz.OrleansSample.GrainInterfaces;
+using Wolfspelz.OrleansSample.Grains;
 
 namespace Wolfspelz.OrleansSample.Client
 {
@@ -42,14 +44,17 @@ namespace Wolfspelz.OrleansSample.Client
             attempt = 0;
             IClusterClient client;
             client = new ClientBuilder()
-                .UseLocalhostClustering()
-                .Configure<ClusterOptions>(options =>
-                {
-                    options.ClusterId = "dev";
-                    options.ServiceId = "Sample";
-                })
-                .ConfigureLogging(logging => logging.AddConsole())
-                .Build();
+            .Configure<ClusterOptions>(options =>
+            {
+                options.ClusterId = "dev";
+                options.ServiceId = "Sample";
+            })
+            .UseAzureStorageClustering(options => 
+                options.ConnectionString = "UseDevelopmentStorage=true"
+            )
+            .ConfigureApplicationParts(x => x.AddApplicationPart(typeof(StringCacheGrain).Assembly).WithReferences())  
+            .ConfigureLogging(logging => logging.AddConsole())
+            .Build();
 
             await client.Connect(RetryFilter);
             Console.WriteLine("Client successfully connect to silo host");
@@ -95,7 +100,7 @@ namespace Wolfspelz.OrleansSample.Client
                     Console.WriteLine($"Terminating");
                     return;
                 }
-                
+
                 var action = parts[0];
 
                 if (action == "quit" || action == "q" || parts.Length < 2)

@@ -2,8 +2,10 @@
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
+using Wolfspelz.OrleansSample.Grains;
 
 namespace Wolfspelz.OrleansSample.SiloHost
 {
@@ -37,14 +39,40 @@ namespace Wolfspelz.OrleansSample.SiloHost
         {
             // define the cluster configuration
             var builder = new SiloHostBuilder()
-                .UseLocalhostClustering()
-                .Configure<ClusterOptions>(options =>
-                {
-                    options.ClusterId = "dev";
-                    options.ServiceId = "Sample";
-                })
-                .Configure<EndpointOptions>(options => options.AdvertisedIPAddress = IPAddress.Loopback)
-                .ConfigureLogging(logging => logging.AddConsole());
+            .Configure<ClusterOptions>(options =>
+            {
+                options.ClusterId = "dev";
+                options.ServiceId = "Sample";
+            })
+            .UseAzureStorageClustering(options => 
+                options.ConnectionString = "UseDevelopmentStorage=true"
+            )
+            .ConfigureEndpoints(
+                siloPort: 15411,
+                gatewayPort: 15412,
+                hostname: IPAddress.Loopback.ToString()
+            )
+            .AddAzureBlobGrainStorage("default", options =>
+            {
+                options.ConnectionString = "UseDevelopmentStorage=true";
+                options.ContainerName = "sample-grains";
+            })
+            .AddAzureBlobGrainStorage("PubSubStore", options =>
+            {
+                options.ConnectionString = "UseDevelopmentStorage=true";
+                options.ContainerName = "sample-pubsub";
+            })
+            .AddSimpleMessageStreamProvider("default", (SimpleMessageStreamProviderOptions options) =>
+            {
+                options.FireAndForgetDelivery = true;
+            })
+            .UseInMemoryReminderService()
+            .ConfigureApplicationParts(x =>
+            {
+                x.AddApplicationPart(typeof(StringCacheGrain).Assembly).WithReferences();
+            })
+            .ConfigureLogging(logging => logging.AddConsole())
+            ;
 
             var host = builder.Build();
             await host.StartAsync();
