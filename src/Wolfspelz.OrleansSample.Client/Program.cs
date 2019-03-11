@@ -46,7 +46,7 @@ namespace Wolfspelz.OrleansSample.Client
                 .Configure<ClusterOptions>(options =>
                 {
                     options.ClusterId = "dev";
-                    options.ServiceId = "HelloWorldApp";
+                    options.ServiceId = "Sample";
                 })
                 .ConfigureLogging(logging => logging.AddConsole())
                 .Build();
