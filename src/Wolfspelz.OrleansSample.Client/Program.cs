@@ -7,17 +7,19 @@ using Orleans.Runtime;
 using Orleans.Configuration;
 using Orleans.Hosting;
 using Wolfspelz.OrleansSample.GrainInterfaces;
+using Wolfspelz.OrleansSample.Shared;
 
 namespace Wolfspelz.OrleansSample.Client
 {
     public class Program
     {
         private static string Mode { get; set; } = "Interactive"; // Test
-        private static string ClusterId { get; set; } = "Demo";
-        private static string ServiceId { get; set; } = "Sample";
+        private static string ClusterId { get; set; } = Settings.ClusterId;
+        private static string ServiceId { get; set; } = Settings.ServiceId;
         private static string ConnectionString { get; set; } = "UseDevelopmentStorage=true";
         private static int MaxAttemptsBeforeFailing { get; set; } = 5;
         private static int AttemptDelaySec { get; set; } = 4;
+        private static string SmsProviderName { get; set; } = Settings.SmsProviderName;
 
         private static int _attemptCounter = 0;
 
@@ -119,8 +121,9 @@ namespace Wolfspelz.OrleansSample.Client
 
         private static void DoTest(IClusterClient client)
         {
-            ExecuteTest(client, TestStringCache);
-            ExecuteTest(client, TestStringStorage);
+            ExecuteTest(client, Test_BasicGrain);
+            ExecuteTest(client, Test_Persistance);
+            ExecuteTest(client, Test_Streams);
         }
 
         private static void ExecuteTest(IClusterClient client, Action<IClusterClient> action)
@@ -136,19 +139,46 @@ namespace Wolfspelz.OrleansSample.Client
             }
         }
 
-        private static void TestStringCache(IClusterClient client)
+        private static void Test_Streams(IClusterClient client)
         {
-            var data = "Hello World";
-            var grain = client.GetGrain<IStringCache>(Guid.NewGuid().ToString());
-            grain.Set(data).Wait();
-            var result = grain.Get().Result;
-            if (result != data)
+            var producer = client.GetGrain<IStreamProducer>(Guid.NewGuid().ToString());
+            var consumer1 = client.GetGrain<IStreamConsumer>(Guid.NewGuid().ToString());
+            var consumer2 = client.GetGrain<IStreamConsumer>(Guid.NewGuid().ToString());
+            var streamGuid = Guid.NewGuid();
+            var streamName = "TestName";
+
+            consumer1.Subscribe(streamGuid, streamName).Wait();
+
+            producer.Send(streamGuid, streamName, "1").Wait();
+
             {
-                throw new Exception($"Expected=<{data}> got=<{result}>");
+                var expected = "1";
+                var result = consumer1.Get().Result;
+                if (result != expected)
+                {
+                    throw new Exception($"Expected=<{expected}> result=<{result}>");
+                }
             }
+
+            consumer2.Subscribe(streamGuid, streamName).Wait();
+
+            producer.Send(streamGuid, streamName, "2").Wait();
+
+            {
+                var expected = "12";
+                var result = consumer1.Get().Result;
+                if (result != expected) { throw new Exception($"Expected=<{expected}> result=<{result}>"); } }
+            {
+                var expected = "2";
+                var result = consumer2.Get().Result;
+                if (result != expected) { throw new Exception($"Late joiner: Expected=<{expected}> result=<{result}>"); }
+            }
+
+            consumer1.Unsubscribe().Wait();
+            consumer2.Unsubscribe().Wait();
         }
 
-        private static void TestStringStorage(IClusterClient client)
+        private static void Test_Persistance(IClusterClient client)
         {
             var id = Guid.NewGuid().ToString();
             //var id = "id1";
@@ -160,30 +190,21 @@ namespace Wolfspelz.OrleansSample.Client
                 grain.Set(data).Wait();
                 var expected = data;
                 var result = grain.Get().Result;
-                if (result != expected)
-                {
-                    throw new Exception($"Set/Get: Expected=<{expected}> result=<{result}>");
-                }
+                if (result != expected) { throw new Exception($"Set/Get: Expected=<{expected}> result=<{result}>"); }
             }
 
             {
                 grain.ClearTransientState().Wait();
                 var expected = "";
                 var result = grain.Get().Result;
-                if (result != expected)
-                {
-                    throw new Exception($"ClearTransient/Get: Expected=<{expected}> result=<{result}>");
-                }
+                if (result != expected) { throw new Exception($"ClearTransient/Get: Expected=<{expected}> result=<{result}>"); }
             }
 
             {
                 grain.ReadPersistentState().Wait();
                 var expected = data;
                 var result = grain.Get().Result;
-                if (result != expected)
-                {
-                    throw new Exception($"ReadPersistent/Get: Expected=<{expected}> result=<{result}>");
-                }
+                if (result != expected) { throw new Exception($"ReadPersistent/Get: Expected=<{expected}> result=<{result}>"); }
             }
 
             {
@@ -192,11 +213,18 @@ namespace Wolfspelz.OrleansSample.Client
                 grain.ReadPersistentState().Wait();
                 var expected = "";
                 var result = grain.Get().Result;
-                if (result != expected)
-                {
-                    throw new Exception($"ClearPersistent/Get: Expected=<{expected}> result=<{result}>");
-                }
+                if (result != expected) { throw new Exception($"ClearPersistent/Get: Expected=<{expected}> result=<{result}>"); }
             }
+        }
+
+        private static void Test_BasicGrain(IClusterClient client)
+        {
+            var data = "Hello World";
+            var grain = client.GetGrain<IStringCache>(Guid.NewGuid().ToString());
+            grain.Set(data).Wait();
+            var expected = data;
+            var result = grain.Get().Result;
+            if (result != expected) { throw new Exception($"Expected=<{expected}> result=<{result}>"); }
         }
 
         private static async Task DoInteractive(IClusterClient client)
@@ -230,7 +258,7 @@ namespace Wolfspelz.OrleansSample.Client
                 }
 
                 var key = parts[1];
-                var grain = client.GetGrain<IStringCache>(key);
+                var grain = client.GetGrain<IStringStorage>(key);
 
                 switch (action)
                 {

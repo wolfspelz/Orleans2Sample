@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wolfspelz.OrleansSample.Cli
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wolfspelz.OrleansSample.GrainInterfaces", "src\Wolfspelz.OrleansSample.GrainInterfaces\Wolfspelz.OrleansSample.GrainInterfaces.csproj", "{566DC69A-E7F5-4AD7-96FA-E0536BDA5AED}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wolfspelz.OrleansSample.Shared", "src\Wolfspelz.OrleansSample.Shared\Wolfspelz.OrleansSample.Shared.csproj", "{9F26AC5F-CC2B-4D07-8EC4-E361A01BC3BD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{566DC69A-E7F5-4AD7-96FA-E0536BDA5AED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{566DC69A-E7F5-4AD7-96FA-E0536BDA5AED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{566DC69A-E7F5-4AD7-96FA-E0536BDA5AED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F26AC5F-CC2B-4D07-8EC4-E361A01BC3BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F26AC5F-CC2B-4D07-8EC4-E361A01BC3BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F26AC5F-CC2B-4D07-8EC4-E361A01BC3BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F26AC5F-CC2B-4D07-8EC4-E361A01BC3BD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
