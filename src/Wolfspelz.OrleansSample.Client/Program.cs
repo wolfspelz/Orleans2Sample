@@ -12,6 +12,7 @@ namespace Wolfspelz.OrleansSample.Client
 {
     public class Program
     {
+        private static string Mode { get; set; } = "Interactive"; // Test
         private static string ClusterId { get; set; } = "Demo";
         private static string ServiceId { get; set; } = "Sample";
         private static string ConnectionString { get; set; } = "UseDevelopmentStorage=true";
@@ -25,26 +26,19 @@ namespace Wolfspelz.OrleansSample.Client
             var q = new Queue<string>(args);
             while (q.Count > 0)
             {
-                var arg = q.Dequeue();
-                arg = arg.Trim();
-                switch (arg)
+                var arg = q.Dequeue().Trim();
+                var parts = arg.Split(new[] { '=' }, 2);
+                if (parts.Length == 2)
                 {
-                    case "--help":
-                        break;
-                    default:
-                        var kv = arg.Split(new[] { '=' }, 2);
-                        if (kv.Length == 2)
-                        {
-                            switch (kv[0])
-                            {
-                                case "ClusterId": ClusterId = kv[1]; break;
-                                case "ServiceId": ServiceId = kv[1]; break;
-                                case "ConnectionString": ConnectionString = kv[1]; break;
-                                case "MaxAttemptsBeforeFailing": MaxAttemptsBeforeFailing = int.Parse(kv[1]); break;
-                                case "AttemptDelaySec": AttemptDelaySec = int.Parse(kv[1]); break;
-                            }
-                        }
-                        break;
+                    switch (parts[0])
+                    {
+                        case "Mode": Mode = parts[1]; break;
+                        case "ClusterId": ClusterId = parts[1]; break;
+                        case "ServiceId": ServiceId = parts[1]; break;
+                        case "ConnectionString": ConnectionString = parts[1]; break;
+                        case "MaxAttemptsBeforeFailing": MaxAttemptsBeforeFailing = int.Parse(parts[1]); break;
+                        case "AttemptDelaySec": AttemptDelaySec = int.Parse(parts[1]); break;
+                    }
                 }
             }
 
@@ -72,6 +66,23 @@ namespace Wolfspelz.OrleansSample.Client
 
         private static async Task<IClusterClient> StartClientWithRetries()
         {
+            async Task<bool> RetryFilter(Exception exception)
+            {
+                if (exception.GetType() != typeof(SiloUnavailableException))
+                {
+                    Console.WriteLine($"Cluster client failed to connect to cluster with unexpected error.  Exception: {exception}");
+                    return false;
+                }
+                _attemptCounter++;
+                Console.WriteLine($"Cluster client attempt {_attemptCounter} of {MaxAttemptsBeforeFailing} failed to connect to cluster.  Exception: {exception}");
+                if (_attemptCounter > MaxAttemptsBeforeFailing)
+                {
+                    return false;
+                }
+                await Task.Delay(TimeSpan.FromSeconds(AttemptDelaySec));
+                return true;
+            }
+
             _attemptCounter = 0;
             var client = new ClientBuilder()
                 .Configure<ClusterOptions>(options =>
@@ -83,33 +94,60 @@ namespace Wolfspelz.OrleansSample.Client
                     options.ConnectionString = ConnectionString
                 )
                 //.ConfigureApplicationParts(x => x.AddApplicationPart(typeof(StringCacheGrain).Assembly).WithReferences())
-                .ConfigureLogging(logging => logging.AddConsole())
+                //.ConfigureLogging(logging => logging.AddConsole())
                 .Build();
 
             await client.Connect(RetryFilter);
-            Console.WriteLine("Client successfully connect to silo host");
+            Console.WriteLine("Connected to silo host");
 
             return client;
         }
 
-        private static async Task<bool> RetryFilter(Exception exception)
-        {
-            if (exception.GetType() != typeof(SiloUnavailableException))
-            {
-                Console.WriteLine($"Cluster client failed to connect to cluster with unexpected error.  Exception: {exception}");
-                return false;
-            }
-            _attemptCounter++;
-            Console.WriteLine($"Cluster client attempt {_attemptCounter} of {MaxAttemptsBeforeFailing} failed to connect to cluster.  Exception: {exception}");
-            if (_attemptCounter > MaxAttemptsBeforeFailing)
-            {
-                return false;
-            }
-            await Task.Delay(TimeSpan.FromSeconds(AttemptDelaySec));
-            return true;
-        }
 
         private static async Task DoClientWork(IClusterClient client)
+        {
+            switch (Mode)
+            {
+                case "Test":
+                    DoTest(client);
+                    break;
+                default:
+                    await DoInteractive(client);
+                    break;
+            }
+        }
+
+        private static void DoTest(IClusterClient client)
+        {
+            ExecuteTest(client, TestStringCache);
+        }
+
+        private static void ExecuteTest(IClusterClient client, Action<IClusterClient> action)
+        {
+            Console.WriteLine(action.Method.Name);
+            try
+            {
+                action.Invoke(client);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+
+        private static void TestStringCache(IClusterClient client)
+        {
+            var testData = "Hello World";
+            var stringCache = client.GetGrain<IStringCache>(Guid.NewGuid().ToString());
+            stringCache.Set(testData).Wait();
+            var result = stringCache.Get().Result;
+            if (result != testData)
+            {
+                throw new Exception($"StringCache failed, expected=<{testData}> got=<{result}>");
+            }
+        }
+
+        private static async Task DoInteractive(IClusterClient client)
         {
             Console.WriteLine("[set|get|inc] key (value)");
 
