@@ -124,6 +124,7 @@ namespace Wolfspelz.OrleansSample.Client
             ExecuteTest(client, Test_BasicGrain);
             ExecuteTest(client, Test_Persistance);
             ExecuteTest(client, Test_Streams);
+            ExecuteTest(client, Test_ComplexState);
         }
 
         private static void ExecuteTest(IClusterClient client, Action<IClusterClient> action)
@@ -137,6 +138,14 @@ namespace Wolfspelz.OrleansSample.Client
             {
                 Console.WriteLine(ex);
             }
+        }
+
+        private static void Test_ComplexState(IClusterClient client)
+        {
+            var grain = client.GetGrain<IComplexState>(Guid.NewGuid().ToString());
+            grain.SaveState().Wait();
+            var result = grain.CheckState().Result;
+            if (!result) { throw new Exception($"CheckState failed"); }
         }
 
         private static void Test_Streams(IClusterClient client)
