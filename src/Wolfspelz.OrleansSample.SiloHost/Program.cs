@@ -82,7 +82,7 @@ namespace Wolfspelz.OrleansSample.SiloHost
                 gatewayPort: GatewayPort,
                 hostname: IPAddress.Loopback.ToString()
             )
-            .AddAzureBlobGrainStorage("default", options =>
+            .AddAzureBlobGrainStorage(Orleans.Providers.ProviderConstants.DEFAULT_STORAGE_PROVIDER_NAME, options =>
             {
                 options.ConnectionString = GrainStateStoreConnectionString;
                 options.ContainerName = GrainStateBlobName;
@@ -100,6 +100,7 @@ namespace Wolfspelz.OrleansSample.SiloHost
             .ConfigureApplicationParts(x =>
             {
                 x.AddApplicationPart(typeof(StringCacheGrain).Assembly).WithReferences();
+                x.AddApplicationPart(typeof(StringStorageGrain).Assembly).WithReferences();
             })
             .ConfigureLogging(logging => logging.AddConsole())
             ;

@@ -120,6 +120,7 @@ namespace Wolfspelz.OrleansSample.Client
         private static void DoTest(IClusterClient client)
         {
             ExecuteTest(client, TestStringCache);
+            ExecuteTest(client, TestStringStorage);
         }
 
         private static void ExecuteTest(IClusterClient client, Action<IClusterClient> action)
@@ -137,13 +138,64 @@ namespace Wolfspelz.OrleansSample.Client
 
         private static void TestStringCache(IClusterClient client)
         {
-            var testData = "Hello World";
-            var stringCache = client.GetGrain<IStringCache>(Guid.NewGuid().ToString());
-            stringCache.Set(testData).Wait();
-            var result = stringCache.Get().Result;
-            if (result != testData)
+            var data = "Hello World";
+            var grain = client.GetGrain<IStringCache>(Guid.NewGuid().ToString());
+            grain.Set(data).Wait();
+            var result = grain.Get().Result;
+            if (result != data)
             {
-                throw new Exception($"StringCache failed, expected=<{testData}> got=<{result}>");
+                throw new Exception($"Expected=<{data}> got=<{result}>");
+            }
+        }
+
+        private static void TestStringStorage(IClusterClient client)
+        {
+            var id = Guid.NewGuid().ToString();
+            //var id = "id1";
+            var grain = client.GetGrain<IStringStorage>(id);
+
+            var data = "Hello World";
+
+            {
+                grain.Set(data).Wait();
+                var expected = data;
+                var result = grain.Get().Result;
+                if (result != expected)
+                {
+                    throw new Exception($"Set/Get: Expected=<{expected}> result=<{result}>");
+                }
+            }
+
+            {
+                grain.ClearTransientState().Wait();
+                var expected = "";
+                var result = grain.Get().Result;
+                if (result != expected)
+                {
+                    throw new Exception($"ClearTransient/Get: Expected=<{expected}> result=<{result}>");
+                }
+            }
+
+            {
+                grain.ReadPersistentState().Wait();
+                var expected = data;
+                var result = grain.Get().Result;
+                if (result != expected)
+                {
+                    throw new Exception($"ReadPersistent/Get: Expected=<{expected}> result=<{result}>");
+                }
+            }
+
+            {
+                grain.ClearPersistentState().Wait();
+                grain.ClearTransientState().Wait();
+                grain.ReadPersistentState().Wait();
+                var expected = "";
+                var result = grain.Get().Result;
+                if (result != expected)
+                {
+                    throw new Exception($"ClearPersistent/Get: Expected=<{expected}> result=<{result}>");
+                }
             }
         }
 
