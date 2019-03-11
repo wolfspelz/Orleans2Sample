@@ -7,7 +7,6 @@ using Orleans.Runtime;
 using Orleans.Configuration;
 using Orleans.Hosting;
 using Wolfspelz.OrleansSample.GrainInterfaces;
-using Wolfspelz.OrleansSample.Grains;
 
 namespace Wolfspelz.OrleansSample.Client
 {
@@ -83,7 +82,7 @@ namespace Wolfspelz.OrleansSample.Client
                 .UseAzureStorageClustering(options =>
                     options.ConnectionString = ConnectionString
                 )
-                .ConfigureApplicationParts(x => x.AddApplicationPart(typeof(StringCacheGrain).Assembly).WithReferences())
+                //.ConfigureApplicationParts(x => x.AddApplicationPart(typeof(StringCacheGrain).Assembly).WithReferences())
                 .ConfigureLogging(logging => logging.AddConsole())
                 .Build();
 
