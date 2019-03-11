@@ -51,7 +51,7 @@ namespace Wolfspelz.OrleansSample.Grains
             public static readonly Dictionary<string, List<string>> DictionaryStringListString = new Dictionary<string, List<string>> { ["a"] = new List<string> { "b", "c" }, ["d"] = new List<string> { "e", "f" }, };
 
             public static string GrainPropValue = "Tranquility";
-            public static ClassA ReferenceProp = new ClassA() { IntMem = 42 };
+            public static readonly ClassA ReferenceProp = new ClassA() { IntMem = 42 };
             public static readonly List<ClassA> ListReferenceProp = new List<ClassA> { new ClassA() { IntMem = 42 }, new ClassA() { IntMem = 43 } };
         }
 
