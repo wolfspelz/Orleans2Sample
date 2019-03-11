@@ -25,9 +25,12 @@ namespace Wolfspelz.OrleansSample.Grains
 
         public async Task Subscribe(Guid guid, string name)
         {
-            var sp = GetStreamProvider(Settings.SmsProviderName);
-            var stream = sp.GetStream<string>(guid, name);
-            _subscription = await stream.SubscribeAsync(this);
+            if (_subscription == null)
+            {
+                var sp = GetStreamProvider(Settings.SmsProviderName);
+                var stream = sp.GetStream<string>(guid, name);
+                _subscription = await stream.SubscribeAsync(this);
+            }
         }
 
         public async Task Unsubscribe()
