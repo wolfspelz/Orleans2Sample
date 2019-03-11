@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -12,11 +13,42 @@ namespace Wolfspelz.OrleansSample.Client
 {
     public class Program
     {
-        const int initializeAttemptsBeforeFailing = 5;
-        private static int attempt = 0;
+        private static string ClusterId { get; set; } = "Demo";
+        private static string ServiceId { get; set; } = "Sample";
+        private static string ConnectionString { get; set; } = "UseDevelopmentStorage=true";
+        private static int MaxAttemptsBeforeFailing { get; set; } = 5;
+        private static int AttemptDelaySec { get; set; } = 4;
+
+        private static int _attemptCounter = 0;
 
         static int Main(string[] args)
         {
+            var q = new Queue<string>(args);
+            while (q.Count > 0)
+            {
+                var arg = q.Dequeue();
+                arg = arg.Trim();
+                switch (arg)
+                {
+                    case "--help":
+                        break;
+                    default:
+                        var kv = arg.Split(new[] { '=' }, 2);
+                        if (kv.Length == 2)
+                        {
+                            switch (kv[0])
+                            {
+                                case "ClusterId": ClusterId = kv[1]; break;
+                                case "ServiceId": ServiceId = kv[1]; break;
+                                case "ConnectionString": ConnectionString = kv[1]; break;
+                                case "MaxAttemptsBeforeFailing": MaxAttemptsBeforeFailing = int.Parse(kv[1]); break;
+                                case "AttemptDelaySec": AttemptDelaySec = int.Parse(kv[1]); break;
+                            }
+                        }
+                        break;
+                }
+            }
+
             return RunMainAsync().Result;
         }
 
@@ -41,23 +73,23 @@ namespace Wolfspelz.OrleansSample.Client
 
         private static async Task<IClusterClient> StartClientWithRetries()
         {
-            attempt = 0;
-            IClusterClient client;
-            client = new ClientBuilder()
-            .Configure<ClusterOptions>(options =>
-            {
-                options.ClusterId = "dev";
-                options.ServiceId = "Sample";
-            })
-            .UseAzureStorageClustering(options => 
-                options.ConnectionString = "UseDevelopmentStorage=true"
-            )
-            .ConfigureApplicationParts(x => x.AddApplicationPart(typeof(StringCacheGrain).Assembly).WithReferences())  
-            .ConfigureLogging(logging => logging.AddConsole())
-            .Build();
+            _attemptCounter = 0;
+            var client = new ClientBuilder()
+                .Configure<ClusterOptions>(options =>
+                {
+                    options.ClusterId = ClusterId;
+                    options.ServiceId = ServiceId;
+                })
+                .UseAzureStorageClustering(options =>
+                    options.ConnectionString = ConnectionString
+                )
+                .ConfigureApplicationParts(x => x.AddApplicationPart(typeof(StringCacheGrain).Assembly).WithReferences())
+                .ConfigureLogging(logging => logging.AddConsole())
+                .Build();
 
             await client.Connect(RetryFilter);
             Console.WriteLine("Client successfully connect to silo host");
+
             return client;
         }
 
@@ -68,19 +100,18 @@ namespace Wolfspelz.OrleansSample.Client
                 Console.WriteLine($"Cluster client failed to connect to cluster with unexpected error.  Exception: {exception}");
                 return false;
             }
-            attempt++;
-            Console.WriteLine($"Cluster client attempt {attempt} of {initializeAttemptsBeforeFailing} failed to connect to cluster.  Exception: {exception}");
-            if (attempt > initializeAttemptsBeforeFailing)
+            _attemptCounter++;
+            Console.WriteLine($"Cluster client attempt {_attemptCounter} of {MaxAttemptsBeforeFailing} failed to connect to cluster.  Exception: {exception}");
+            if (_attemptCounter > MaxAttemptsBeforeFailing)
             {
                 return false;
             }
-            await Task.Delay(TimeSpan.FromSeconds(4));
+            await Task.Delay(TimeSpan.FromSeconds(AttemptDelaySec));
             return true;
         }
 
         private static async Task DoClientWork(IClusterClient client)
         {
-            Console.WriteLine("test1");
             Console.WriteLine("[set|get|inc] key (value)");
 
             while (true)
