@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Wolfspelz.OrleansSample.GrainInterfaces\Wolfspelz.OrleansSample.GrainInterfaces.csproj" />
     <ProjectReference Include="..\Wolfspelz.OrleansSample.Grains\Wolfspelz.OrleansSample.Grains.csproj" />
+    <ProjectReference Include="..\Wolfspelz.OrleansSample.Shared\Wolfspelz.OrleansSample.Shared.csproj" />
   </ItemGroup>
 
 </Project>

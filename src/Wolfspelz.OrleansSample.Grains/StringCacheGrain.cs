@@ -4,7 +4,7 @@ using Wolfspelz.OrleansSample.GrainInterfaces;
 
 namespace Wolfspelz.OrleansSample.Grains
 {
-    public class StringCache : Grain, IStringCache
+    public class StringCacheGrain : Grain, IStringCache
     {
         private string _data = "";
         
