@@ -1,5 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -71,7 +75,38 @@ namespace Wolfspelz.OrleansSample.SiloHost
 
         private static async Task<ISiloHost> StartSilo()
         {
-            // define the cluster configuration
+            //var x1 = Dns.GetHostName();
+            //var x2 = Dns.GetHostAddressesAsync(x1).Result;
+            //var x3 = x2.Where(address => address.AddressFamily == AddressFamily.InterNetwork);
+            //var x4 = x3.FirstOrDefault()?.ToString();
+            //var x5 = x4;
+
+            var addresses = Dns.GetHostAddressesAsync(Dns.GetHostName()).Result;
+            var candidates = new SortedList<int, string>();
+            foreach (var candidate in addresses)
+            {
+                var score = 1;
+                if (candidate.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    score += 10;
+                }
+                else
+                {
+                    score += 20;
+                }
+
+                if (candidate.ToString().StartsWith("192.168."))
+                {
+                    score += 100;
+                }
+
+                if (!candidates.ContainsKey(score))
+                {
+                    candidates.Add(score, candidate.ToString());
+                }
+            }
+            var publicAddress = candidates.First().Value; // Dns.GetHostAddressesAsync(Dns.GetHostName()).Result.Where(address => address.AddressFamily == AddressFamily.InterNetwork).Skip(1).FirstOrDefault()?.ToString()
+
             var builder = new SiloHostBuilder()
                 .Configure<ClusterOptions>(options =>
                 {
@@ -85,7 +120,7 @@ namespace Wolfspelz.OrleansSample.SiloHost
                 .ConfigureEndpoints(
                     siloPort: SiloPort,
                     gatewayPort: GatewayPort,
-                    hostname: IPAddress.Loopback.ToString()
+                    hostname: publicAddress
                 )
 
                 // Azure blob storage as default storage provider
