@@ -48,10 +48,62 @@ namespace Wolfspelz.OrleansSample.SiloHost
             GatewayPort = int.Parse(Environment.GetEnvironmentVariable("GatewayPort") ?? GatewayPort.ToString());
             SiloPort = int.Parse(Environment.GetEnvironmentVariable("SiloPort") ?? SiloPort.ToString());
             SmsProviderName = Environment.GetEnvironmentVariable("SmsProviderName") ?? SmsProviderName;
+            if (!string.IsNullOrEmpty(ConnectionString))
+            {
+                MembershipTableConnectionString = ConnectionString;
+                GrainStateStoreConnectionString = ConnectionString;
+                PubSubStoreConnectionString = ConnectionString;
+            }
+
+            var q = new Queue<string>(args);
+            while (q.Count > 0)
+            {
+                var arg = q.Dequeue().Trim();
+                var parts = arg.Split(new[] { '=' }, 2);
+                if (parts.Length == 2)
+                {
+                    var value = parts[1];
+                    switch (parts[0])
+                    {
+                        case "ClusterId": ClusterId = value; break;
+                        case "ServiceId": ServiceId = value; break;
+                        case "ConnectionString":
+                            {
+                                ConnectionString = value;
+                                if (!string.IsNullOrEmpty(ConnectionString))
+                                {
+                                    MembershipTableConnectionString = ConnectionString;
+                                    GrainStateStoreConnectionString = ConnectionString;
+                                    PubSubStoreConnectionString = ConnectionString;
+                                }
+                            }
+                            break;
+                        case "MembershipTableConnectionString": MembershipTableConnectionString = value; break;
+                        case "GrainStateStoreConnectionString": GrainStateStoreConnectionString = value; break;
+                        case "PubSubStoreConnectionString": PubSubStoreConnectionString = value; break;
+                        case "GrainStateBlobName": GrainStateBlobName = value; break;
+                        case "PubSubBlobName": PubSubBlobName = value; break;
+                        case "GatewayPort": GatewayPort = int.Parse(value); break;
+                        case "SiloPort": SiloPort = int.Parse(value); break;
+                        case "SmsProviderName": SmsProviderName = value; break;
+                    }
+                }
+            }
+
+            Console.WriteLine($"ClusterId={ClusterId}");
+            Console.WriteLine($"ServiceId={ServiceId}");
+            Console.WriteLine($"ConnectionString={ConnectionString}");
+            Console.WriteLine($"MembershipTableConnectionString={MembershipTableConnectionString}");
+            Console.WriteLine($"GrainStateStoreConnectionString={GrainStateStoreConnectionString}");
+            Console.WriteLine($"PubSubStoreConnectionString={PubSubStoreConnectionString}");
+            Console.WriteLine($"GrainStateBlobName={GrainStateBlobName}");
+            Console.WriteLine($"PubSubBlobName={PubSubBlobName}");
+            Console.WriteLine($"GatewayPort={ GatewayPort}");
+            Console.WriteLine($"SiloPort={SiloPort}");
+            Console.WriteLine($"SmsProviderName={SmsProviderName}");
 
             return RunMainAsync().Result;
         }
-
 
         private static async Task<int> RunMainAsync()
         {

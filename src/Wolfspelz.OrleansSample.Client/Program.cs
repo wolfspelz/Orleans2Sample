@@ -32,14 +32,15 @@ namespace Wolfspelz.OrleansSample.Client
                 var parts = arg.Split(new[] { '=' }, 2);
                 if (parts.Length == 2)
                 {
+                    var value = parts[1];
                     switch (parts[0])
                     {
-                        case "Mode": Mode = parts[1]; break;
-                        case "ClusterId": ClusterId = parts[1]; break;
-                        case "ServiceId": ServiceId = parts[1]; break;
-                        case "ConnectionString": ConnectionString = parts[1]; break;
-                        case "MaxAttemptsBeforeFailing": MaxAttemptsBeforeFailing = int.Parse(parts[1]); break;
-                        case "AttemptDelaySec": AttemptDelaySec = int.Parse(parts[1]); break;
+                        case "Mode": Mode = value; break;
+                        case "ClusterId": ClusterId = value; break;
+                        case "ServiceId": ServiceId = value; break;
+                        case "ConnectionString": ConnectionString = value; break;
+                        case "MaxAttemptsBeforeFailing": MaxAttemptsBeforeFailing = int.Parse(value); break;
+                        case "AttemptDelaySec": AttemptDelaySec = int.Parse(value); break;
                     }
                 }
             }
