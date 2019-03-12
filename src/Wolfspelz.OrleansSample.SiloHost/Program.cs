@@ -110,14 +110,24 @@ namespace Wolfspelz.OrleansSample.SiloHost
         {
             try
             {
+                var exitEvent = new ManualResetEvent(false);
+                Console.CancelKeyPress += (sender, eventArgs) => {
+                    eventArgs.Cancel = true;
+                    exitEvent.Set();
+                };
+
                 var host = await StartSilo();
 
-                Console.WriteLine("Press Enter to terminate...");
-                var cmdline = Console.ReadLine();
-                Console.WriteLine($"Got <{cmdline}>");
-                await host.StopAsync();
-                //Console.WriteLine("Ready....");
+                //Console.WriteLine("Press Enter to terminate...");
+                //var cmdline = Console.ReadLine();
+                //Console.WriteLine($"Got <{cmdline}>");
+
+                //Console.WriteLine("Ready...");
                 //Thread.Sleep(Timeout.Infinite);
+                Console.WriteLine("Press [CTRL-C] to terminate...");
+                exitEvent.WaitOne();
+
+                await host.StopAsync();
 
                 return 0;
             }
