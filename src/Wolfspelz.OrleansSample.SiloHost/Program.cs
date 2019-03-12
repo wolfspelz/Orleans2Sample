@@ -112,11 +112,12 @@ namespace Wolfspelz.OrleansSample.SiloHost
             {
                 var host = await StartSilo();
 
-                //Console.WriteLine("Press Enter to terminate...");
-                //Console.ReadLine();
-                //await host.StopAsync();
-                Console.WriteLine("Ready....");
-                Thread.Sleep(Timeout.Infinite);
+                Console.WriteLine("Press Enter to terminate...");
+                var cmdline = Console.ReadLine();
+                Console.WriteLine($"Got <{cmdline}>");
+                await host.StopAsync();
+                //Console.WriteLine("Ready....");
+                //Thread.Sleep(Timeout.Infinite);
 
                 return 0;
             }
@@ -138,29 +139,30 @@ namespace Wolfspelz.OrleansSample.SiloHost
 
             var addresses = Dns.GetHostAddressesAsync(Dns.GetHostName()).Result;
             var candidates = new SortedList<int, string>();
-            foreach (var candidate in addresses)
+            foreach (var address in addresses)
             {
                 var score = 1;
-                if (candidate.AddressFamily == AddressFamily.InterNetwork)
+                if (address.AddressFamily == AddressFamily.InterNetwork)
                 {
                     score += 10;
                 }
                 else
                 {
-                    score += 20;
+                    score += 1000;
                 }
 
-                if (candidate.ToString().StartsWith("192.168."))
+                if (address.ToString().StartsWith("192.168."))
                 {
                     score += 100;
                 }
-
+                Console.WriteLine($"Candidate address={address.ToString()} score={score}");
                 if (!candidates.ContainsKey(score))
                 {
-                    candidates.Add(score, candidate.ToString());
+                    candidates.Add(score, address.ToString());
                 }
             }
-            var publicAddress = candidates.First().Value; // Dns.GetHostAddressesAsync(Dns.GetHostName()).Result.Where(address => address.AddressFamily == AddressFamily.InterNetwork).Skip(1).FirstOrDefault()?.ToString()
+            var chosenAddress = candidates.First().Value; // Dns.GetHostAddressesAsync(Dns.GetHostName()).Result.Where(address => address.AddressFamily == AddressFamily.InterNetwork).Skip(1).FirstOrDefault()?.ToString()
+            Console.WriteLine($"Chosen address={chosenAddress}");
 
             var builder = new SiloHostBuilder()
                 .Configure<ClusterOptions>(options =>
@@ -175,7 +177,7 @@ namespace Wolfspelz.OrleansSample.SiloHost
                 .ConfigureEndpoints(
                     siloPort: SiloPort,
                     gatewayPort: GatewayPort,
-                    hostname: publicAddress
+                    hostname: chosenAddress
                 )
 
                 // Azure blob storage as default storage provider
