@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -110,10 +111,12 @@ namespace Wolfspelz.OrleansSample.SiloHost
             try
             {
                 var host = await StartSilo();
-                Console.WriteLine("Press Enter to terminate...");
-                Console.ReadLine();
 
-                await host.StopAsync();
+                //Console.WriteLine("Press Enter to terminate...");
+                //Console.ReadLine();
+                //await host.StopAsync();
+                Console.WriteLine("Ready....");
+                Thread.Sleep(Timeout.Infinite);
 
                 return 0;
             }

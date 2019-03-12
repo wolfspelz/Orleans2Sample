@@ -97,7 +97,7 @@ namespace Wolfspelz.OrleansSample.Client
                     options.ConnectionString = ConnectionString
                 )
                 //.ConfigureApplicationParts(x => x.AddApplicationPart(typeof(StringCacheGrain).Assembly).WithReferences())
-                //.ConfigureLogging(logging => logging.AddConsole())
+                .ConfigureLogging(logging => logging.AddConsole())
                 .Build();
 
             await client.Connect(RetryFilter);
