@@ -124,7 +124,7 @@ namespace Wolfspelz.OrleansSample.SiloHost
 
                 //Console.WriteLine("Ready...");
                 //Thread.Sleep(Timeout.Infinite);
-                Console.WriteLine("Press [CTRL-C] to terminate...");
+                Console.WriteLine("Press CTRL+C to shut down.");
                 exitEvent.WaitOne();
 
                 await host.StopAsync();
