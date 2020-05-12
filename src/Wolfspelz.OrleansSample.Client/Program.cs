@@ -1,13 +1,20 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Runtime;
 using Orleans.Configuration;
+using Orleans.Hosting;
+using Orleans.Streams;
 using Wolfspelz.OrleansSample.GrainInterfaces;
 
 namespace Wolfspelz.OrleansSample.Client
 {
+    //public class StringCacheObserver : IAsyncObserver<string>
+    //{
+    //}
+
     public class Program
     {
         const int initializeAttemptsBeforeFailing = 5;
@@ -49,6 +56,7 @@ namespace Wolfspelz.OrleansSample.Client
                     options.ServiceId = "Sample";
                 })
                 .ConfigureLogging(logging => logging.AddConsole())
+                .AddSimpleMessageStreamProvider("SMSProvider")
                 .Build();
 
             await client.Connect(RetryFilter);
@@ -76,7 +84,9 @@ namespace Wolfspelz.OrleansSample.Client
         private static async Task DoClientWork(IClusterClient client)
         {
             Console.WriteLine("test1");
-            Console.WriteLine("[set|get|inc] key (value)");
+            Console.WriteLine("[set|get|inc|sub|unsub] key (value)");
+
+            var subscriptionHandles = new Dictionary<string, StreamSubscriptionHandle<string>>();
 
             while (true)
             {
@@ -95,7 +105,7 @@ namespace Wolfspelz.OrleansSample.Client
                     Console.WriteLine($"Terminating");
                     return;
                 }
-                
+
                 var action = parts[0];
 
                 if (action == "quit" || action == "q" || parts.Length < 2)
@@ -133,6 +143,36 @@ namespace Wolfspelz.OrleansSample.Client
                             Console.WriteLine($"{key} <- {num}");
                         }
                         break;
+
+                    case "sub":
+                        {
+                            var streamProvider = client.GetStreamProvider(StringCacheStream.Provider);
+                            var stream = streamProvider.GetStream<string>(await grain.GetStreamId(), StringCacheStream.Namespace);
+                            if (subscriptionHandles.ContainsKey(key))
+                            {
+                                await subscriptionHandles[key].UnsubscribeAsync();
+                                subscriptionHandles.Remove(key);
+                            }
+                            subscriptionHandles[key] = await stream.SubscribeAsync<string>((data, token) =>
+                            {
+                                Console.WriteLine($"{key} >> {data}");
+                                return Task.CompletedTask;
+                            });
+                            Console.WriteLine($"{key} >> ");
+                        }
+                        break;
+
+                    case "unsub":
+                        {
+                            if (subscriptionHandles.ContainsKey(key))
+                            {
+                                await subscriptionHandles[key].UnsubscribeAsync();
+                                subscriptionHandles.Remove(key);
+                                Console.WriteLine($"{key} >>| ");
+                            }
+                        }
+                        break;
+
                 }
             }
         }

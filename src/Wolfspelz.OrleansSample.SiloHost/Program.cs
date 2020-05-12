@@ -44,7 +44,10 @@ namespace Wolfspelz.OrleansSample.SiloHost
                     options.ServiceId = "Sample";
                 })
                 .Configure<EndpointOptions>(options => options.AdvertisedIPAddress = IPAddress.Loopback)
-                .ConfigureLogging(logging => logging.AddConsole());
+                .ConfigureLogging(logging => logging.AddConsole())
+                .AddSimpleMessageStreamProvider("SMSProvider", options => { options.FireAndForgetDelivery = true; })
+                .AddMemoryGrainStorage("PubSubStore")
+                ;
 
             var host = builder.Build();
             await host.StartAsync();
