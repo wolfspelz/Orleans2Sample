@@ -55,7 +55,7 @@ namespace Wolfspelz.OrleansSample.Client
                     options.ClusterId = "dev";
                     options.ServiceId = "Sample";
                 })
-                .ConfigureLogging(logging => logging.AddConsole())
+                .ConfigureLogging(logging => { logging.AddConsole(); logging.SetMinimumLevel(LogLevel.Error); })
                 .AddSimpleMessageStreamProvider("SMSProvider")
                 .Build();
 
