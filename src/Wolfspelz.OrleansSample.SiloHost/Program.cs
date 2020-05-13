@@ -2,8 +2,11 @@
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
+using Orleans.Statistics;
+using Wolfspelz.OrleansSample.Grains;
 
 namespace Wolfspelz.OrleansSample.SiloHost
 {
@@ -44,9 +47,18 @@ namespace Wolfspelz.OrleansSample.SiloHost
                     options.ServiceId = "Sample";
                 })
                 .Configure<EndpointOptions>(options => options.AdvertisedIPAddress = IPAddress.Loopback)
-                .ConfigureLogging(logging => { logging.AddConsole(); logging.SetMinimumLevel(LogLevel.Error); })
-                .AddSimpleMessageStreamProvider("SMSProvider", options => { options.FireAndForgetDelivery = true; })
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddConsole();
+                    logging.SetMinimumLevel(LogLevel.Error);
+                })
+                .AddSimpleMessageStreamProvider("SMSProvider", options =>
+                {
+                    options.FireAndForgetDelivery = true;
+                })
                 .AddMemoryGrainStorage("PubSubStore")
+                .UsePerfCounterEnvironmentStatistics()
+                .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(StringCache).Assembly).WithReferences())
                 ;
 
             var host = builder.Build();
